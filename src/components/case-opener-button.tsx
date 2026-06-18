@@ -47,6 +47,8 @@ interface CaseOpenerButtonProps {
   chapterName?: string;
   /** Logged-in detective's name, for the welcome beat. */
   detectiveName?: string;
+  /** When true (detective already past chapter 1), skip the welcome intro. */
+  skipWelcome?: boolean;
   label?: string;
   className?: string;
   variant?: React.ComponentProps<typeof Button>["variant"];
@@ -61,6 +63,7 @@ export function CaseOpenerButton({
   chapterLabel,
   chapterName,
   detectiveName,
+  skipWelcome,
   label = "Open the file",
   className,
   variant,
@@ -73,7 +76,9 @@ export function CaseOpenerButton({
   const storageKey = WELCOME_KEYS[caseId] ?? null;
 
   function handleClick() {
-    if (evidence.length === 0) {
+    // Detectives past chapter 1 skip the welcome intro and go straight in —
+    // the case page plays the cinematic for their current chapter instead.
+    if (skipWelcome || evidence.length === 0) {
       router.push(href);
       return;
     }

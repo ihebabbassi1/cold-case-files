@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { getCases } from "@/data/cases";
 import { Crosshair } from "@/components/crosshair";
 import { Stamp } from "@/components/stamp";
@@ -16,6 +17,16 @@ export default async function CasesPage() {
   if (!session?.user) redirect("/login");
 
   const cases = getCases();
+
+  // How far has this detective gotten in each case? The welcome opener should
+  // only play for someone genuinely on chapter 1 (no chapters solved yet).
+  const investigations = await prisma.investigation.findMany({
+    where: { userId: session.user.id },
+    select: { caseId: true, solvedStages: true },
+  });
+  const solvedByCase = new Map(
+    investigations.map((i) => [i.caseId, i.solvedStages.length])
+  );
 
   return (
     <div className="container py-12">
@@ -72,6 +83,7 @@ export default async function CasesPage() {
                   chapterName={c.investigation?.[0]?.title}
                   chapterLabel={c.investigation?.[0]?.label}
                   detectiveName={session.user.name}
+                  skipWelcome={(solvedByCase.get(c.id) ?? 0) > 0}
                   className="w-full font-type uppercase tracking-widest"
                 />
               )}

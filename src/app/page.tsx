@@ -5,6 +5,7 @@ import { Stamp } from "@/components/stamp";
 import { Button } from "@/components/ui/button";
 import { CaseOpenerButton } from "@/components/case-opener-button";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { getCases } from "@/data/cases";
 
 export default async function HomePage() {
@@ -13,6 +14,17 @@ export default async function HomePage() {
     headers: (await headers()) as unknown as Headers,
   });
   const user = session?.user ?? null;
+
+  // Per-case progress, so the welcome opener only plays for chapter-1 detectives.
+  const investigations = user
+    ? await prisma.investigation.findMany({
+        where: { userId: user.id },
+        select: { caseId: true, solvedStages: true },
+      })
+    : [];
+  const solvedByCase = new Map(
+    investigations.map((i) => [i.caseId, i.solvedStages.length])
+  );
 
   return (
     <div className="vignette">
@@ -179,6 +191,7 @@ export default async function HomePage() {
                     chapterName={c.investigation?.[0]?.title}
                     chapterLabel={c.investigation?.[0]?.label}
                     detectiveName={user?.name}
+                    skipWelcome={(solvedByCase.get(c.id) ?? 0) > 0}
                     label="Open the file →"
                     variant="link"
                     className="px-0 font-type text-xs uppercase tracking-widest"
