@@ -5,9 +5,17 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCase } from "@/data/cases";
+import { getInvestigationState } from "@/lib/actions";
+import { resolveRevealState } from "@/data/chapters";
+import { getBadges, computeScore } from "@/data/badges";
 import type { CasePhoto, CaseSource } from "@/types/case";
 import { Crosshair } from "@/components/crosshair";
 import { Stamp } from "@/components/stamp";
+import { ChapterGate } from "@/components/chapter-gate";
+import {
+  ChapterCinematic,
+  type CinematicPayload,
+} from "@/components/chapter-cinematic";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -83,19 +91,102 @@ export default async function CasePage({
     orderBy: { createdAt: "desc" },
   });
 
-  // Group photos by where they belong
-  const victimPhotos = (file.photos ?? []).filter((p) =>
+  const hasInvestigation = Boolean(file.investigation?.length);
+  const totalStages = file.investigation?.length ?? 0;
+  const { solvedStageIds, completed: investigationComplete } = hasInvestigation
+    ? await getInvestigationState(file.id)
+    : { solvedStageIds: [], completed: false };
+  const solvedCount = solvedStageIds.length;
+
+  // Resolve the chapter game: which content has the detective unlocked so far?
+  const reveal = resolveRevealState(file, solvedStageIds, investigationComplete);
+  const gated = reveal.hasChapters;
+
+  // Build the one-time 3D entrance payload for the chapter the detective is on
+  // (or the finale once the case is closed). The component itself enforces the
+  // "play only once" rule via localStorage.
+  const caseBadges = getBadges(file.id);
+  const scoreState = computeScore(file.id, solvedStageIds);
+  let cinematic: CinematicPayload | null = null;
+  if (gated && hasInvestigation) {
+    if (investigationComplete) {
+      cinematic = {
+        storageKey: `ccf:finale:${file.id}`,
+        kind: "finale",
+        chapterNumber: scoreState.total,
+        total: scoreState.total,
+        badge: caseBadges[caseBadges.length - 1] ?? null,
+        score: scoreState.score,
+      };
+    } else if (reveal.currentChapter) {
+      const n = reveal.currentChapter.number;
+      cinematic = {
+        storageKey: `ccf:intro:${file.id}:${reveal.currentChapter.stageId}`,
+        kind: n === 1 ? "welcome" : "unlock",
+        stageId: reveal.currentChapter.stageId,
+        chapterNumber: n,
+        total: reveal.currentChapter.total,
+        chapterTitle: reveal.currentChapter.title,
+        chapterLabel: reveal.currentChapter.label,
+        // The badge just earned is the one for the previous chapter.
+        badge: n > 1 ? caseBadges[n - 2] ?? null : null,
+      };
+    }
+  }
+
+  // Apply the chapter gate to every content section. Nothing is removed — locked
+  // items simply stay sealed until their chapter is reached.
+  const visibleVictims = gated
+    ? file.victims.filter((v) => reveal.victimNames.has(v.name))
+    : file.victims;
+  const lockedVictims = file.victims.length - visibleVictims.length;
+
+  const visibleTimeline = gated
+    ? file.timeline.filter((t) => reveal.timelineDates.has(t.date))
+    : file.timeline;
+  const lockedTimeline = file.timeline.length - visibleTimeline.length;
+
+  const visibleEvidence = gated
+    ? file.evidence.filter((e) => reveal.evidenceIds.has(e.id))
+    : file.evidence;
+  const lockedEvidence = file.evidence.length - visibleEvidence.length;
+
+  const visibleCiphers = gated
+    ? file.ciphers.filter((c) => reveal.cipherIds.has(c.id))
+    : file.ciphers;
+  const lockedCiphers = file.ciphers.length - visibleCiphers.length;
+
+  const suspectsRevealed = !gated || reveal.suspectsRevealed;
+  const visibleSuspects = suspectsRevealed ? file.suspects : [];
+
+  // Group photos by where they belong (chapter-gated)
+  const allowedPhotos = (file.photos ?? []).filter(
+    (p) => !gated || reveal.photoIds.has(p.id)
+  );
+  const victimPhotos = allowedPhotos.filter((p) =>
     ["lake-herman-road", "hartnell-car-door", "lake-berryessa", "stine-crime-scene"].includes(p.id)
   );
-  const evidencePhotos = (file.photos ?? []).filter((p) =>
+  const evidencePhotos = allowedPhotos.filter((p) =>
     ["zodiac-letter-jul1969", "zodiac-letter-nov1969"].includes(p.id)
   );
-  const cipherPhotos = (file.photos ?? []).filter((p) =>
+  const cipherPhotos = allowedPhotos.filter((p) =>
     ["z408-cipher", "z340-cipher"].includes(p.id)
   );
-  const suspectPhotos = (file.photos ?? []).filter((p) =>
+  const suspectPhotos = allowedPhotos.filter((p) =>
     ["wanted-poster", "berryessa-sketch"].includes(p.id)
   );
+
+  const SealedNotice = ({ count, noun }: { count: number; noun: string }) =>
+    count > 0 ? (
+      <div className="mt-6 flex items-center gap-3 rounded-md border border-dashed border-ink/40 bg-ink/5 px-5 py-4">
+        <Crosshair className="h-5 w-5 shrink-0 text-primary/60" />
+        <p className="font-type text-xs uppercase tracking-widest text-muted-foreground">
+          {count} {noun}
+          {count === 1 ? "" : "s"} still sealed — crack the next chapter to unlock
+          {count === 1 ? " it" : " them"}.
+        </p>
+      </div>
+    ) : null;
 
   return (
     <div className="vignette">
@@ -131,14 +222,36 @@ export default async function CasePage({
             </div>
           </dl>
 
-          {priorAccusation && (
-            <div className="mt-6 inline-flex items-center gap-3 rounded border border-primary/50 bg-primary/10 px-4 py-2">
-              <Stamp straight>On file</Stamp>
-              <span className="font-type text-xs uppercase tracking-wider text-ink">
-                You named {priorAccusation.suspectName}
-              </span>
-            </div>
-          )}
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            {priorAccusation && (
+              <div className="inline-flex items-center gap-3 rounded border border-primary/50 bg-primary/10 px-4 py-2">
+                <Stamp straight>On file</Stamp>
+                <span className="font-type text-xs uppercase tracking-wider text-ink">
+                  You named {priorAccusation.suspectName}
+                </span>
+              </div>
+            )}
+            {gated && (
+              <Link
+                href={`/detective/${session.user.id}`}
+                className="inline-flex items-center gap-4 rounded border border-ink/40 bg-ink/5 px-4 py-2 transition-colors hover:border-primary/50 hover:bg-primary/5"
+                title="View your public detective profile"
+              >
+                <span className="font-type text-xs uppercase tracking-widest text-muted-foreground">
+                  Badges{" "}
+                  <span className="text-ink">
+                    {scoreState.earnedCount}/{scoreState.total}
+                  </span>
+                </span>
+                <span className="font-type text-xs uppercase tracking-widest text-muted-foreground">
+                  Score{" "}
+                  <span className="text-primary">
+                    {scoreState.score.toLocaleString()}
+                  </span>
+                </span>
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Tabs */}
@@ -179,7 +292,7 @@ export default async function CasePage({
           {/* Victims */}
           <TabsContent value="victims">
             <div className="grid gap-5 md:grid-cols-2">
-              {file.victims.map((v) => (
+              {visibleVictims.map((v) => (
                 <div key={v.name} className="sheet rounded-md border border-ink/40 p-6">
                   <div className="flex items-center justify-between">
                     <h3 className="font-headline text-xl font-bold text-ink">
@@ -225,6 +338,8 @@ export default async function CasePage({
               ))}
             </div>
 
+            <SealedNotice count={lockedVictims} noun="victim record" />
+
             {victimPhotos.length > 0 && (
               <div className="mt-8">
                 <div className="mb-4 flex items-center gap-4">
@@ -245,7 +360,7 @@ export default async function CasePage({
           <TabsContent value="timeline">
             <div className="sheet rounded-md border border-ink/40 p-7">
               <ol className="relative border-l-2 border-ink/30 pl-6">
-                {file.timeline.map((t, i) => (
+                {visibleTimeline.map((t, i) => (
                   <li key={i} className="mb-6 last:mb-0">
                     <span className="absolute -left-[7px]">
                       <span className="block h-3 w-3 rounded-full bg-primary" />
@@ -269,13 +384,14 @@ export default async function CasePage({
                   </li>
                 ))}
               </ol>
+              <SealedNotice count={lockedTimeline} noun="timeline event" />
             </div>
           </TabsContent>
 
           {/* Evidence */}
           <TabsContent value="evidence">
             <div className="grid gap-5 md:grid-cols-2">
-              {file.evidence.map((e) => (
+              {visibleEvidence.map((e) => (
                 <div key={e.id} className="sheet rounded-md border border-ink/40 p-6">
                   <div className="flex items-start justify-between gap-3">
                     <h3 className="font-headline text-lg font-bold text-ink">
@@ -318,6 +434,8 @@ export default async function CasePage({
               ))}
             </div>
 
+            <SealedNotice count={lockedEvidence} noun="piece of evidence" />
+
             {evidencePhotos.length > 0 && (
               <div className="mt-8">
                 <div className="mb-4 flex items-center gap-4">
@@ -334,7 +452,7 @@ export default async function CasePage({
           {/* Ciphers */}
           <TabsContent value="ciphers">
             <div className="grid gap-5 md:grid-cols-2">
-              {file.ciphers.map((c) => (
+              {visibleCiphers.map((c) => (
                 <div key={c.id} className="noir rounded-md border border-ink/60 p-6">
                   <div className="flex items-center justify-between">
                     <h3 className="font-headline text-lg font-bold text-[hsl(40,35%,82%)]">
@@ -390,6 +508,8 @@ export default async function CasePage({
               ))}
             </div>
 
+            <SealedNotice count={lockedCiphers} noun="cipher" />
+
             {cipherPhotos.length > 0 && (
               <div className="mt-8">
                 <div className="mb-4 flex items-center gap-4">
@@ -405,8 +525,17 @@ export default async function CasePage({
 
           {/* Suspects */}
           <TabsContent value="suspects">
+            {!suspectsRevealed && (
+              <div className="noir mb-6 flex items-center gap-3 rounded-md border border-dashed border-primary/40 p-6">
+                <Crosshair className="h-6 w-6 shrink-0 text-primary/70" />
+                <p className="font-type text-xs uppercase tracking-widest text-[hsl(40,28%,74%)]">
+                  The suspect roster stays sealed until you have worked every
+                  event. Crack the chapters in order to earn the right to name him.
+                </p>
+              </div>
+            )}
             <div className="grid gap-5">
-              {file.suspects.map((s) => (
+              {visibleSuspects.map((s) => (
                 <div key={s.id} className="sheet rounded-md border border-ink/40 p-6">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <h3 className="font-headline text-2xl font-bold text-ink">
@@ -509,23 +638,58 @@ export default async function CasePage({
           </TabsContent>
         </Tabs>
 
-        {/* Accusation CTA */}
-        <div className="noir mt-10 rounded-md border border-primary/40 p-8 text-center">
-          <Crosshair className="mx-auto h-10 w-10 text-primary" />
-          <h2 className="mt-3 font-headline text-3xl font-black text-[hsl(40,38%,85%)]">
-            Ready to name the Zodiac?
-          </h2>
-          <p className="mx-auto mt-2 max-w-xl typed text-sm text-[hsl(40,28%,74%)]">
-            You have read the file. Make the call no detective in 1969 could.
-            Your verdict goes on the record.
-          </p>
-          <Button asChild size="lg" className="mt-5 font-type uppercase tracking-widest">
-            <Link href={`/cases/${file.id}/accuse`}>
-              {priorAccusation ? "Revisit your verdict" : "Make your accusation"}
-            </Link>
-          </Button>
-        </div>
+        {/* Investigation / Accusation CTA */}
+        {hasInvestigation && !investigationComplete ? (
+          <div className="noir mt-10 rounded-md border border-primary/40 p-8 text-center">
+            <Crosshair className="mx-auto h-10 w-10 text-primary" />
+            <h2 className="mt-3 font-headline text-3xl font-black text-[hsl(40,38%,85%)]">
+              Work the case, event by event
+            </h2>
+            <p className="mx-auto mt-2 max-w-xl typed text-sm text-[hsl(40,28%,74%)]">
+              Start at Lake Herman Road and solve your way forward. Each event
+              stays sealed until you crack the one before it. Close every lead
+              and you earn the right to name him.
+            </p>
+            <p className="mt-3 font-type text-xs uppercase tracking-widest text-primary">
+              {solvedCount} of {totalStages} events solved
+            </p>
+            <Button asChild size="lg" className="mt-5 font-type uppercase tracking-widest">
+              <Link href={`/cases/${file.id}/investigate`}>
+                {solvedCount > 0 ? "Resume the investigation" : "Begin the investigation"}
+              </Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="noir mt-10 rounded-md border border-primary/40 p-8 text-center">
+            <Crosshair className="mx-auto h-10 w-10 text-primary" />
+            <h2 className="mt-3 font-headline text-3xl font-black text-[hsl(40,38%,85%)]">
+              Ready to name the Zodiac?
+            </h2>
+            <p className="mx-auto mt-2 max-w-xl typed text-sm text-[hsl(40,28%,74%)]">
+              {hasInvestigation
+                ? "You worked every event. Make the call no detective in 1969 could — your verdict goes on the record."
+                : "You have read the file. Make the call no detective in 1969 could. Your verdict goes on the record."}
+            </p>
+            <Button asChild size="lg" className="mt-5 font-type uppercase tracking-widest">
+              <Link href={`/cases/${file.id}/accuse`}>
+                {priorAccusation ? "Revisit your verdict" : "Make your accusation"}
+              </Link>
+            </Button>
+          </div>
+        )}
       </div>
+
+      {hasInvestigation && gated && (
+        <ChapterGate
+          caseId={file.id}
+          solvedCount={solvedCount}
+          total={totalStages}
+          completed={investigationComplete}
+          currentChapter={reveal.currentChapter}
+        />
+      )}
+
+      <ChapterCinematic cinematic={cinematic} />
     </div>
   );
 }

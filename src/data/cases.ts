@@ -345,6 +345,161 @@ const zodiac: CaseFile = {
     },
   ],
 
+  investigation: [
+    {
+      id: "lake-herman",
+      label: "December 20, 1968 · 11:00 PM",
+      title: "The first blood on Lake Herman Road",
+      narrative:
+        "It starts on a gravel turnout outside Benicia. Two teenagers on their first date, parked in the dark. A man walks up out of the night and opens fire — no robbery, no words, no motive anyone can name. By morning Solano County has two dead kids and not a single suspect.\n\nBefore you can chase a killer, you have to read the scene the way the first deputies did. Start with the weapon left in the shell casings.",
+      puzzle: {
+        type: "multiple-choice",
+        question:
+          "The shell casings scattered at the turnout tell you what the killer fired at David Faraday and Betty Lou Jensen. What was the weapon?",
+        options: ["A .22 caliber rifle", "A 9mm pistol", "A 12-gauge shotgun", "A hunting knife"],
+        answer: "A .22 caliber rifle",
+        hint: "It's a rifle round — small caliber, the same kind a deer hunter might carry.",
+        explanation:
+          "Correct. A .22 caliber rifle was used at Lake Herman Road — the first of the killer's confirmed murders. There was no robbery and no assault: the sheer absence of motive is what made the case so chilling, and so cold.",
+      },
+    },
+    {
+      id: "blue-rock-springs",
+      label: "July 4, 1969 · just after midnight",
+      title: "The phone call that confessed",
+      narrative:
+        "Seven months later, Blue Rock Springs Park in Vallejo. A car pulls alongside Darlene Ferrin and Michael Mageau. A man crosses over with a bright light and a 9mm, fires through the window, and is gone. Ferrin dies. Mageau lives.\n\nLess than an hour later, the killer does something new — something that turns a string of shootings into a single hunter. He picks up a telephone.",
+      puzzle: {
+        type: "multiple-choice",
+        question:
+          "Within the hour of the Blue Rock Springs attack, the killer made a phone call. Who did he call — and what did he do?",
+        options: [
+          "He called Vallejo police and took credit for this shooting AND the Lake Herman Road murders",
+          "He called Darlene Ferrin's family to taunt them",
+          "He called the San Francisco Chronicle to demand money",
+          "He called an ambulance for Michael Mageau",
+        ],
+        answer:
+          "He called Vallejo police and took credit for this shooting AND the Lake Herman Road murders",
+        hint: "He wanted credit — and he tied two crime scenes together himself.",
+        explanation:
+          "Right. The killer phoned Vallejo PD, calmly claimed both the Blue Rock Springs shooting and the December murders on Lake Herman Road, then hung up. It was the first time anyone realized the crimes were the work of one man.",
+      },
+    },
+    {
+      id: "the-408",
+      label: "August 1, 1969",
+      title: "Three letters, one cipher",
+      narrative:
+        "Now he reaches for a pen. Three near-identical letters land at three Bay Area newspapers, each carrying one third of a 408-symbol cipher. Print it on the front page, he warns, or there will be a killing spree.\n\nA schoolteacher and his wife break it in about a week. The decoded text opens with a line that has haunted the case ever since. Read the killer's own first words.",
+      puzzle: {
+        type: "text",
+        question:
+          "The solved 408 cipher begins with the killer's motive, in his own misspelled hand: \"I like ______ people because it is so much fun.\" Fill in the missing word.",
+        answer: "killing",
+        acceptable: ["kill", "killin"],
+        hint: "It's the act itself — the thing he says is more fun than hunting wild game.",
+        explanation:
+          "Exactly. \"I LIKE KILLING PEOPLE BECAUSE IT IS SO MUCH FUN…\" The Z408 was a homophonic substitution cipher — multiple symbols per letter — cracked by Donald and Bettye Harden in roughly a week. It was a taunt, never a confession of identity.",
+      },
+    },
+    {
+      id: "this-is-the-zodiac",
+      label: "August 1969",
+      title: "A killer gives himself a name",
+      narrative:
+        "A new letter arrives, and with its opening line the case acquires the name it will carry forever. Every letter after this one will open the same way. The press has its monster; the monster has his brand.",
+      puzzle: {
+        type: "text",
+        question:
+          "Complete the four-word salutation that opened the letter — and every letter after it: \"This is the ______ speaking.\"",
+        answer: "zodiac",
+        acceptable: ["the zodiac"],
+        hint: "It's the name the whole case is filed under.",
+        explanation:
+          "\"THIS IS THE ZODIAC SPEAKING.\" The name was born in this letter and became the signature on a decade of correspondence. He was no longer just a shooter in the dark — he was a character demanding an audience.",
+      },
+    },
+    {
+      id: "lake-berryessa",
+      label: "September 27, 1969",
+      title: "The man in the hood",
+      narrative:
+        "Lake Berryessa, Napa County. Two picnickers, Cecelia Shepard and Bryan Hartnell, look up to find a man in a black executioner's hood, a strange symbol stitched to his chest. He ties them up and stabs them both. Shepard dies; Hartnell survives to describe every detail.\n\nThe emblem on that hood is the killer's calling card — the same mark that closes his letters. Name it.",
+      puzzle: {
+        type: "multiple-choice",
+        question:
+          "Survivor Bryan Hartnell described a symbol sewn onto the killer's hood — the same mark that signs the letters. What is it?",
+        options: [
+          "A crossed-circle — a gunsight",
+          "A pentagram",
+          "An inverted cross",
+          "A coiled serpent",
+        ],
+        answer: "A crossed-circle — a gunsight",
+        hint: "A circle with a cross through it — like looking through the sight of a gun.",
+        explanation:
+          "Correct. The crossed-circle — a gunsight — was stitched to the Lake Berryessa hood and signed nearly every letter. After this attack the killer wrote the dates of his crimes on the victims' car door in felt pen, treating the car like a scoreboard.",
+      },
+    },
+    {
+      id: "paul-stine",
+      label: "October 11, 1969",
+      title: "Proof torn from a dead man's shirt",
+      narrative:
+        "Presidio Heights, San Francisco. Cab driver Paul Stine is shot once in the head. Teenagers across the street watch enough to give the city its famous sketch. But the killer takes a souvenir from the body — and later mails pieces of it to the Chronicle to prove the murders are his.\n\nThat souvenir is the single strongest physical link between the letters and a confirmed killing. What did he take?",
+      puzzle: {
+        type: "multiple-choice",
+        question:
+          "From Paul Stine's body the killer tore away an object he later mailed to the Chronicle as proof. What was it?",
+        options: [
+          "A piece of his bloodstained shirt",
+          "His taxi license",
+          "His wristwatch",
+          "A page from his logbook",
+        ],
+        answer: "A piece of his bloodstained shirt",
+        hint: "He mailed swatches of it to the newspaper — stained with blood.",
+        explanation:
+          "Right. The Zodiac tore a swatch from Stine's bloodstained shirt and mailed pieces to the Chronicle to prove the murders were his work. Bloody fingerprints were also lifted from the cab — prints that have never been conclusively matched to any suspect.",
+      },
+    },
+    {
+      id: "the-340",
+      label: "December 5, 2020",
+      title: "Fifty-one years of silence, broken",
+      narrative:
+        "On November 8, 1969 the Zodiac mailed his masterpiece: the 340 cipher. It used substitution plus a diagonal transposition across a 17-column grid, and it defeated the FBI, the NSA, and every codebreaker alive — for half a century.\n\nThen, in December 2020, a team of three amateurs finally cracked it. Everyone hoped for a name. They got another taunt. How long had the Z340 stood unsolved?",
+      puzzle: {
+        type: "text",
+        question:
+          "The Z340 cipher resisted every codebreaker for how many years before it was solved in 2020? (Answer with the number.)",
+        answer: "51",
+        acceptable: ["51 years", "fifty-one", "fifty one"],
+        hint: "Mailed in 1969, solved in 2020 — do the math.",
+        explanation:
+          "Fifty-one years. David Oranchak, Sam Blake, and Jarl Van Eycke solved the Z340 in December 2020. Like the 408 before it, it held only a taunt — \"I HOPE YOU ARE HAVING LOTS OF FUN IN TRYING TO CATCH ME\" — and never the name the killer kept promising.",
+      },
+    },
+    {
+      id: "the-prime-suspect",
+      label: "The investigation",
+      title: "The only man ever served a warrant",
+      narrative:
+        "Decades of detectives, FBI agents, and citizen sleuths chased him. Thousands of persons of interest were logged. But one name sat at the center of the file longer than any other — a former schoolteacher from Vallejo, the only suspect ever served with a search warrant.\n\nYou've read the events. Before you can file a verdict, name the man the investigation circled for thirty years.",
+      puzzle: {
+        type: "text",
+        question:
+          "Who is the prime suspect — the only person ever served a search warrant in the Zodiac case? (First and last name.)",
+        answer: "arthur leigh allen",
+        acceptable: ["arthur allen", "leigh allen", "allen", "arthur leigh allen"],
+        hint: "He owned a Sea Wolf watch with a crossed-circle logo and lived minutes from the Vallejo scenes.",
+        explanation:
+          "Arthur Leigh Allen. The case against him was entirely circumstantial — a friend's account, the matching watch logo, his proximity to the crimes — and it never held: his fingerprints, handwriting, and partial DNA did not match. He died in 1992, never charged. The file is now yours to close.",
+      },
+    },
+  ],
+
   verdict: [
     "You have named your suspect. Now here is the truth the badge could never escape:",
     "Despite thousands of persons of interest, decades of work by the Vallejo and San Francisco police, the Napa County Sheriff and the FBI, and an army of citizen investigators — no one was ever charged with the Zodiac murders.",

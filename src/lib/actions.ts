@@ -40,6 +40,130 @@ export async function submitAccusation(
   }
 }
 
+// ---------- Investigation Mode ----------
+
+export interface InvestigationState {
+  solvedStageIds: string[];
+  completed: boolean;
+}
+
+/** Read the current user's progress through a case's investigation track. */
+export async function getInvestigationState(
+  caseId: string
+): Promise<InvestigationState> {
+  const session = await auth.api.getSession({
+    headers: (await headers()) as unknown as Headers,
+  });
+  if (!session?.user) return { solvedStageIds: [], completed: false };
+
+  const row = await prisma.investigation.findUnique({
+    where: { userId_caseId: { userId: session.user.id, caseId } },
+  });
+
+  return {
+    solvedStageIds: row?.solvedStages ?? [],
+    completed: Boolean(row?.completedAt),
+  };
+}
+
+export interface PuzzleResult {
+  ok: boolean;
+  error?: string;
+  correct?: boolean;
+  /** Only present (and only for the stage just solved) on a correct answer. */
+  explanation?: string;
+  /** The id of the next stage to attempt, or null when the case is complete. */
+  nextStageId?: string | null;
+  completed?: boolean;
+}
+
+const normalize = (s: string) =>
+  s.trim().toLowerCase().replace(/\s+/g, " ");
+
+/** Validate a puzzle answer server-side, enforce ordering, and persist progress. */
+export async function submitPuzzleAnswer(input: {
+  caseId: string;
+  stageId: string;
+  answer: string;
+}): Promise<PuzzleResult> {
+  const session = await auth.api.getSession({
+    headers: (await headers()) as unknown as Headers,
+  });
+  if (!session?.user) {
+    return { ok: false, error: "You must be signed in to investigate." };
+  }
+
+  const file = getCase(input.caseId);
+  const stages = file?.investigation;
+  if (!file || file.locked || !stages?.length) {
+    return { ok: false, error: "No active investigation for this case." };
+  }
+
+  const stageIndex = stages.findIndex((s) => s.id === input.stageId);
+  if (stageIndex === -1) {
+    return { ok: false, error: "Unknown stage." };
+  }
+
+  const existing = await prisma.investigation.findUnique({
+    where: { userId_caseId: { userId: session.user.id, caseId: input.caseId } },
+  });
+  const solved = new Set(existing?.solvedStages ?? []);
+
+  // Enforce order: every earlier stage must already be solved, and this one must not be.
+  const allEarlierSolved = stages
+    .slice(0, stageIndex)
+    .every((s) => solved.has(s.id));
+  if (!allEarlierSolved) {
+    return { ok: false, error: "Solve the earlier events first, Detective." };
+  }
+  if (solved.has(input.stageId)) {
+    return { ok: false, error: "You have already cleared this event." };
+  }
+
+  // Validate the answer.
+  const stage = stages[stageIndex];
+  const { puzzle } = stage;
+  let correct: boolean;
+  if (puzzle.type === "multiple-choice") {
+    correct = normalize(input.answer) === normalize(puzzle.answer);
+  } else {
+    const candidates = [puzzle.answer, ...(puzzle.acceptable ?? [])].map(normalize);
+    correct = candidates.includes(normalize(input.answer));
+  }
+
+  if (!correct) {
+    return { ok: true, correct: false };
+  }
+
+  // Persist: append this stage, mark complete when the whole track is solved.
+  const solvedStages = [...(existing?.solvedStages ?? []), input.stageId];
+  const completed = stages.every((s) => solvedStages.includes(s.id));
+  const completedAt = completed ? new Date() : null;
+
+  await prisma.investigation.upsert({
+    where: { userId_caseId: { userId: session.user.id, caseId: input.caseId } },
+    create: {
+      userId: session.user.id,
+      caseId: input.caseId,
+      solvedStages,
+      completedAt,
+    },
+    update: { solvedStages, completedAt },
+  });
+
+  revalidatePath(`/cases/${input.caseId}/investigate`);
+  revalidatePath(`/cases/${input.caseId}`);
+
+  const next = stages[stageIndex + 1];
+  return {
+    ok: true,
+    correct: true,
+    explanation: stage.puzzle.explanation,
+    nextStageId: next?.id ?? null,
+    completed,
+  };
+}
+
 export interface AccusationVerdict {
   /** "strong" = picked the prime/most-supported suspect, "weak" = a fringe pick. */
   rating: "strong" | "plausible" | "weak" | null;

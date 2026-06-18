@@ -24,9 +24,14 @@ export function HeaderNav({ user }: { user: User }) {
 
       {user ? (
         <>
-          <span className="hidden font-type text-xs uppercase tracking-wider text-muted-foreground sm:inline">
-            Det. {user.name}
-          </span>
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="hidden font-type text-xs uppercase tracking-wider sm:inline-flex"
+          >
+            <Link href={`/detective/${user.id}`}>Det. {user.name}</Link>
+          </Button>
           <Button
             onClick={handleSignOut}
             variant="outline"

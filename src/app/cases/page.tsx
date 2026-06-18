@@ -1,11 +1,10 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { getCases } from "@/data/cases";
 import { Crosshair } from "@/components/crosshair";
 import { Stamp } from "@/components/stamp";
-import { Button } from "@/components/ui/button";
+import { CaseOpenerButton } from "@/components/case-opener-button";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Case Files — Cold Case Files" };
@@ -64,9 +63,17 @@ export default async function CasesPage() {
                   Awaiting declassification
                 </span>
               ) : (
-                <Button asChild className="w-full font-type uppercase tracking-widest">
-                  <Link href={`/cases/${c.id}`}>Open the file</Link>
-                </Button>
+                <CaseOpenerButton
+                  caseId={c.id}
+                  href={`/cases/${c.id}`}
+                  codename={c.codename}
+                  tagline={c.tagline}
+                  years={c.years}
+                  chapterName={c.investigation?.[0]?.title}
+                  chapterLabel={c.investigation?.[0]?.label}
+                  detectiveName={session.user.name}
+                  className="w-full font-type uppercase tracking-widest"
+                />
               )}
             </div>
           </div>

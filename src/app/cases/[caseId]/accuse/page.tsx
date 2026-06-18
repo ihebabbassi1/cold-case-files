@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { getCase } from "@/data/cases";
+import { getInvestigationState } from "@/lib/actions";
 import { AccusationFlow } from "@/components/accusation-flow";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,12 @@ export default async function AccusePage({
 
   const file = getCase(caseId);
   if (!file || file.locked) notFound();
+
+  // The accusation must be earned: finish the investigation first.
+  if (file.investigation?.length) {
+    const { completed } = await getInvestigationState(file.id);
+    if (!completed) redirect(`/cases/${file.id}/investigate`);
+  }
 
   return (
     <div className="vignette">

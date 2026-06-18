@@ -19,9 +19,10 @@ model User {
   image         String?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  accusations   Accusation[]
+  sessions       Session[]
+  accounts       Account[]
+  accusations    Accusation[]
+  investigations Investigation[]
 
   @@map("user")
 }
@@ -84,4 +85,20 @@ model Accusation {
   @@index([userId])
   @@index([caseId])
   @@map("accusation")
+}
+
+// Per-user, per-case progress through the gated Investigation Mode.
+model Investigation {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caseId       String
+  solvedStages String[]  // ids of solved InvestigationStage, in solve order
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([userId, caseId])
+  @@index([userId])
+  @@map("investigation")
 }

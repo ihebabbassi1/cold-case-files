@@ -9,3 +9,6 @@ build
 npm-debug.log*
 next-env.d.ts
 /prisma/*.db
+
+# Build artifacts
+tsconfig.tsbuildinfo

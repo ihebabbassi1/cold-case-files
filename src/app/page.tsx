@@ -1,11 +1,18 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { Crosshair } from "@/components/crosshair";
 import { Stamp } from "@/components/stamp";
 import { Button } from "@/components/ui/button";
+import { CaseOpenerButton } from "@/components/case-opener-button";
+import { auth } from "@/lib/auth";
 import { getCases } from "@/data/cases";
 
-export default function HomePage() {
+export default async function HomePage() {
   const cases = getCases();
+  const session = await auth.api.getSession({
+    headers: (await headers()) as unknown as Headers,
+  });
+  const user = session?.user ?? null;
 
   return (
     <div className="vignette">
@@ -74,10 +81,21 @@ export default function HomePage() {
               <Button asChild size="lg" className="font-type uppercase tracking-widest">
                 <Link href="/cases">Enter the case file</Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="font-type uppercase tracking-widest">
-                <Link href="/register">Get your badge</Link>
-              </Button>
+              {user ? (
+                <Button asChild size="lg" variant="outline" className="font-type uppercase tracking-widest">
+                  <Link href="/cases/zodiac">Resume the investigation →</Link>
+                </Button>
+              ) : (
+                <Button asChild size="lg" variant="outline" className="font-type uppercase tracking-widest">
+                  <Link href="/register">Get your badge</Link>
+                </Button>
+              )}
             </div>
+            {user && (
+              <p className="mt-3 font-type text-xs uppercase tracking-widest text-muted-foreground">
+                Badge active — Det. {user.name}
+              </p>
+            )}
           </article>
 
           {/* Sidebar: the killer's own words */}
@@ -152,9 +170,19 @@ export default function HomePage() {
                     Awaiting declassification
                   </span>
                 ) : (
-                  <Button asChild variant="link" className="px-0 font-type text-xs uppercase tracking-widest">
-                    <Link href={`/cases/${c.id}`}>Open the file →</Link>
-                  </Button>
+                  <CaseOpenerButton
+                    caseId={c.id}
+                    href={`/cases/${c.id}`}
+                    codename={c.codename}
+                    tagline={c.tagline}
+                    years={c.years}
+                    chapterName={c.investigation?.[0]?.title}
+                    chapterLabel={c.investigation?.[0]?.label}
+                    detectiveName={user?.name}
+                    label="Open the file →"
+                    variant="link"
+                    className="px-0 font-type text-xs uppercase tracking-widest"
+                  />
                 )}
               </div>
             </div>
