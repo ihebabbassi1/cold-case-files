@@ -74,10 +74,14 @@ function SourceList({ sources }: { sources: CaseSource[] }) {
 
 export default async function CasePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ caseId: string }>;
+  searchParams: Promise<{ intro?: string }>;
 }) {
   const { caseId } = await params;
+  const { intro } = await searchParams;
+  const forceIntro = intro === "1";
   const session = await auth.api.getSession({
     headers: (await headers()) as unknown as Headers,
   });
@@ -689,7 +693,10 @@ export default async function CasePage({
         />
       )}
 
-      <ChapterCinematic cinematic={cinematic} />
+      <ChapterCinematic
+        cinematic={cinematic}
+        force={forceIntro && !investigationComplete}
+      />
     </div>
   );
 }

@@ -76,9 +76,13 @@ export function CaseOpenerButton({
   const storageKey = WELCOME_KEYS[caseId] ?? null;
 
   function handleClick() {
-    // Detectives past chapter 1 skip the welcome intro and go straight in —
-    // the case page plays the cinematic for their current chapter instead.
-    if (skipWelcome || evidence.length === 0) {
+    // Detectives past chapter 1 skip the welcome intro — instead the case page
+    // replays the cinematic for their CURRENT chapter, every time, via ?intro=1.
+    if (skipWelcome) {
+      router.push(`${href}?intro=1`);
+      return;
+    }
+    if (evidence.length === 0) {
       router.push(href);
       return;
     }

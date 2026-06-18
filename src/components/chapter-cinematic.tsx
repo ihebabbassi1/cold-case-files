@@ -90,8 +90,12 @@ const AUTO_DISMISS_MS = 6800;
 
 export function ChapterCinematic({
   cinematic,
+  force = false,
 }: {
   cinematic: CinematicPayload | null;
+  /** When true (e.g. arriving via "Open the file"), replay regardless of the
+   * one-time localStorage gate, then clean the URL so refreshes don't repeat. */
+  force?: boolean;
 }) {
   const [show, setShow] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -99,17 +103,33 @@ export function ChapterCinematic({
   useEffect(() => {
     if (!cinematic) return;
     if (typeof window === "undefined") return;
-    try {
-      if (window.localStorage.getItem(cinematic.storageKey)) return;
-      window.localStorage.setItem(cinematic.storageKey, "1");
-    } catch {
-      // If storage is unavailable, just play it this once.
+
+    if (force) {
+      // Always play, and drop the ?intro flag so a later refresh won't replay.
+      try {
+        window.localStorage.setItem(cinematic.storageKey, "1");
+        const url = new URL(window.location.href);
+        if (url.searchParams.has("intro")) {
+          url.searchParams.delete("intro");
+          window.history.replaceState(null, "", url.toString());
+        }
+      } catch {
+        // ignore
+      }
+    } else {
+      try {
+        if (window.localStorage.getItem(cinematic.storageKey)) return;
+        window.localStorage.setItem(cinematic.storageKey, "1");
+      } catch {
+        // If storage is unavailable, just play it this once.
+      }
     }
+
     setShow(true);
     const t = setTimeout(() => dismiss(), AUTO_DISMISS_MS);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cinematic?.storageKey]);
+  }, [cinematic?.storageKey, force]);
 
   function dismiss() {
     setClosing(true);
