@@ -189,7 +189,7 @@ export default async function CasePage({
   const VICTIM_IMG: Record<string, string> = {
     "David Faraday & Betty Lou Jensen": "/zodiac/lake-herman-road.jpg",
     "Darlene Ferrin": "/zodiac/darlene-ferrin.png",
-    "Michael Mageau": "/zodiac/michael-mageau.jpg",
+    "Michael Mageau": "/zodiac/michael-mageau.png",
     "Cecelia Shepard": "/zodiac/lake-berryessa.jpg",
     "Bryan Hartnell": "/zodiac/hartnell-car-door.jpg",
     "Paul Lee Stine": "/zodiac/stine-crime-scene.jpg",
