@@ -12,6 +12,7 @@ import type { CasePhoto, CaseSource } from "@/types/case";
 import { Crosshair } from "@/components/crosshair";
 import { Stamp } from "@/components/stamp";
 import { ChapterGate } from "@/components/chapter-gate";
+import { ClueCard, ExhibitProgress } from "@/components/clue-card";
 import {
   ChapterCinematic,
   type CinematicPayload,
@@ -394,6 +395,11 @@ export default async function CasePage({
 
           {/* Evidence */}
           <TabsContent value="evidence">
+            <ExhibitProgress
+              caseId={file.id}
+              ids={visibleEvidence.map((e) => e.id)}
+              noun="exhibit"
+            />
             <div className="grid gap-5 md:grid-cols-2">
               {visibleEvidence.map((e) => (
                 <div key={e.id} className="sheet rounded-md border border-ink/40 p-6">
@@ -417,23 +423,25 @@ export default async function CasePage({
                       {e.tag}
                     </Badge>
                   </div>
-                  {e.date && (
-                    <p className="mt-1 font-type text-xs uppercase tracking-widest text-muted-foreground">{e.date}</p>
-                  )}
-                  <p className="mt-3 font-serif text-sm leading-relaxed text-ink/90">{e.description}</p>
-                  {e.quote && (
-                    <p className="mt-3 scrawl text-lg text-[hsl(0,50%,30%)]">&ldquo;{e.quote}&rdquo;</p>
-                  )}
-                  {e.sourceUrl && (
-                    <a
-                      href={e.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center gap-1 font-type text-[0.65rem] uppercase tracking-widest text-primary/70 hover:text-primary transition-colors"
-                    >
-                      ↗ {e.sourceLabel ?? "Source"}
-                    </a>
-                  )}
+                  <ClueCard caseId={file.id} clueId={e.id}>
+                    {e.date && (
+                      <p className="mt-1 font-type text-xs uppercase tracking-widest text-muted-foreground">{e.date}</p>
+                    )}
+                    <p className="mt-3 font-serif text-sm leading-relaxed text-ink/90">{e.description}</p>
+                    {e.quote && (
+                      <p className="mt-3 scrawl text-lg text-[hsl(0,50%,30%)]">&ldquo;{e.quote}&rdquo;</p>
+                    )}
+                    {e.sourceUrl && (
+                      <a
+                        href={e.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex items-center gap-1 font-type text-[0.65rem] uppercase tracking-widest text-primary/70 hover:text-primary transition-colors"
+                      >
+                        ↗ {e.sourceLabel ?? "Source"}
+                      </a>
+                    )}
+                  </ClueCard>
                 </div>
               ))}
             </div>
@@ -455,6 +463,11 @@ export default async function CasePage({
 
           {/* Ciphers */}
           <TabsContent value="ciphers">
+            <ExhibitProgress
+              caseId={file.id}
+              ids={visibleCiphers.map((c) => c.id)}
+              noun="cipher"
+            />
             <div className="grid gap-5 md:grid-cols-2">
               {visibleCiphers.map((c) => (
                 <div key={c.id} className="noir rounded-md border border-ink/60 p-6">
@@ -481,6 +494,7 @@ export default async function CasePage({
                       {c.status}
                     </Badge>
                   </div>
+                  <ClueCard caseId={file.id} clueId={c.id} variant="dark" action="Decrypt the exhibit">
                   <p className="mt-1 font-type text-xs uppercase tracking-widest text-[hsl(40,20%,55%)]">{c.date}</p>
                   <p className="mt-3 font-serif text-sm leading-relaxed text-[hsl(40,28%,76%)]">{c.description}</p>
                   {c.solution && (
@@ -508,6 +522,7 @@ export default async function CasePage({
                       ↗ Real cipher scans &amp; full analysis
                     </a>
                   )}
+                  </ClueCard>
                 </div>
               ))}
             </div>
