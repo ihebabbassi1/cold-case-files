@@ -206,23 +206,30 @@ export default async function CasePage({
     z340: "/zodiac/z340-cipher.jpg",
   };
 
+  const humanize = (id: string) =>
+    id.replace(/[-_]/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+
   const boardCards: BoardCard[] = [
     ...visibleSuspects.map((s) => ({
       id: `suspect:${s.id}`,
       kind: "suspect" as const,
       title: s.name,
       subtitle: s.alias,
+      description: s.summary,
     })),
     ...allowedPhotos.map((p) => ({
       id: `photo:${p.id}`,
       kind: "photo" as const,
-      title: p.caption.length > 38 ? p.caption.slice(0, 36) + "…" : p.caption,
+      title: humanize(p.id),
+      description: p.caption,
       image: p.url,
     })),
     ...visibleVictims.map((v) => ({
       id: `victim:${v.name}`,
       kind: "victim" as const,
       title: v.name,
+      subtitle: `${v.status} · ${v.date}`,
+      description: v.details,
       image: VICTIM_IMG[v.name],
     })),
     ...visibleEvidence.map((e) => ({
@@ -230,12 +237,15 @@ export default async function CasePage({
       kind: "evidence" as const,
       title: e.title,
       subtitle: e.tag,
+      description: e.description,
       image: EVIDENCE_IMG[e.id],
     })),
     ...visibleCiphers.map((c) => ({
       id: `cipher:${c.id}`,
       kind: "cipher" as const,
       title: c.name,
+      subtitle: c.status,
+      description: c.description,
       image: CIPHER_IMG[c.id],
     })),
   ];
