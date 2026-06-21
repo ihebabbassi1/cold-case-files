@@ -212,6 +212,13 @@ export default async function CasePage({
       id: `cipher:${c.id}`,
       kind: "cipher" as const,
       title: c.name,
+      // Real scans exist for the two famous ciphers; others use a glyph card.
+      image:
+        c.id === "z408"
+          ? "/zodiac/z408-cipher.png"
+          : c.id === "z340"
+            ? "/zodiac/z340-cipher.jpg"
+            : undefined,
     })),
   ];
   const suspectPhotos = allowedPhotos.filter((p) =>

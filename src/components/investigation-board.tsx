@@ -9,6 +9,7 @@ import {
   StickyNote,
   Network,
   Trash2,
+  Scissors,
 } from "lucide-react";
 import {
   loadBoard,
@@ -176,6 +177,10 @@ export function InvestigationBoard({
     }
     setLinkFrom(null);
     setCursor(null);
+  }
+
+  function removeLink(id: string) {
+    commit({ ...board, links: board.links.filter((l) => l.id !== id) });
   }
 
   function setVerdict(cardId: string, v: Verdict) {
@@ -403,12 +408,7 @@ export function InvestigationBoard({
                           stroke="transparent"
                           strokeWidth={14}
                           className="cursor-pointer"
-                          onClick={() =>
-                            commit({
-                              ...board,
-                              links: board.links.filter((x) => x.id !== l.id),
-                            })
-                          }
+                          onClick={() => removeLink(l.id)}
                         />
                         <line
                           x1={`${a.x}%`}
@@ -472,30 +472,14 @@ export function InvestigationBoard({
                         <X className="h-3 w-3" />
                       </button>
 
-                      {card.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={card.image}
-                          alt={card.title}
-                          draggable={false}
-                          className="h-24 w-full object-cover grayscale-[0.25] sepia-[0.1]"
-                        />
-                      ) : (
-                        <div className="flex h-24 w-full items-center justify-center bg-[#e7dcc2] text-center">
-                          <span className="px-2 font-headline text-sm font-bold leading-tight text-[#2e2718]">
-                            {card.title}
-                          </span>
-                        </div>
-                      )}
+                      <CardThumb card={card} className="h-24 w-full" />
 
                       <p className="mt-1.5 truncate font-type text-[0.55rem] uppercase tracking-wider text-[#6b5836]">
                         {KIND_LABEL[card.kind]}
                       </p>
-                      {card.image && (
-                        <p className="truncate font-headline text-xs font-bold text-[#2e2718]">
-                          {card.title}
-                        </p>
-                      )}
+                      <p className="truncate font-headline text-xs font-bold text-[#2e2718]">
+                        {card.title}
+                      </p>
                       {card.subtitle && (
                         <p className="truncate font-serif text-[0.65rem] italic text-[#6b5836]">
                           {card.subtitle}
@@ -597,6 +581,28 @@ export function InvestigationBoard({
                   );
                 })}
 
+                {/* thread cut buttons (unconnect) — hidden during connect mode */}
+                {!linkMode &&
+                  board.links.map((l) => {
+                    const a = nodePos(l.a);
+                    const b = nodePos(l.b);
+                    if (!a || !b) return null;
+                    const mx = (a.x + b.x) / 2;
+                    const my = (a.y + b.y) / 2;
+                    return (
+                      <button
+                        key={`cut-${l.id}`}
+                        onClick={() => removeLink(l.id)}
+                        title="Cut this thread"
+                        aria-label="Cut this thread"
+                        className="absolute z-20 flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-red-700/70 bg-[#1c150f] text-red-500 opacity-45 shadow transition hover:scale-110 hover:opacity-100"
+                        style={{ left: `${mx}%`, top: `${my}%` }}
+                      >
+                        <Scissors className="h-3 w-3" />
+                      </button>
+                    );
+                  })}
+
                 {/* empty state */}
                 {board.placed.length === 0 && board.notes.length === 0 && (
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -635,18 +641,7 @@ export function InvestigationBoard({
                       onClick={() => pinCard(c.id)}
                       className="flex w-full items-center gap-2 rounded border border-white/10 bg-black/30 p-2 text-left transition-colors hover:border-primary/60 hover:bg-black/50"
                     >
-                      {c.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={c.image}
-                          alt=""
-                          className="h-9 w-9 shrink-0 rounded object-cover grayscale-[0.3]"
-                        />
-                      ) : (
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-primary/20 text-[0.5rem] font-bold uppercase text-primary">
-                          {KIND_LABEL[c.kind].slice(0, 3)}
-                        </span>
-                      )}
+                      <CardThumb card={c} className="h-10 w-10 shrink-0 rounded" />
                       <span className="min-w-0">
                         <span className="block truncate font-type text-[0.6rem] uppercase tracking-wider text-primary/80">
                           {KIND_LABEL[c.kind]}
@@ -668,6 +663,61 @@ export function InvestigationBoard({
         </div>
       )}
     </>
+  );
+}
+
+/** A card's image, or a themed evidence placeholder when there's no photo. */
+function CardThumb({
+  card,
+  className = "",
+}: {
+  card: BoardCard;
+  className?: string;
+}) {
+  if (card.image) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={card.image}
+        alt={card.title}
+        draggable={false}
+        className={`${className} object-cover grayscale-[0.25] sepia-[0.1]`}
+      />
+    );
+  }
+
+  if (card.kind === "suspect" || card.kind === "victim") {
+    const tint = card.kind === "suspect" ? "#c9b48f" : "#aeb9c1";
+    return (
+      <div
+        className={`${className} flex items-center justify-center overflow-hidden`}
+        style={{ background: tint }}
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" className="h-[62%] w-[62%] text-black/35">
+          <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-5 0-9 2.6-9 6v2h18v-2c0-3.4-4-6-9-6Z" />
+        </svg>
+      </div>
+    );
+  }
+
+  if (card.kind === "cipher") {
+    return (
+      <div className={`${className} flex items-center justify-center overflow-hidden bg-[#15130f] p-1.5`}>
+        <span className="font-cipher text-center text-[0.6rem] leading-tight text-[hsl(40,40%,68%)]">
+          ⊕ ✦ ◣ ☋ ⊿ ✚ ⌑ ✦ ⊕ ◣ ☌ ⊿ ✦ ⊕
+        </span>
+      </div>
+    );
+  }
+
+  // evidence — a document / clipping look
+  return (
+    <div className={`${className} flex flex-col justify-center gap-[3px] overflow-hidden bg-[#ece3cd] px-2`}>
+      <span className="h-[3px] w-3/4 rounded-full bg-black/25" />
+      <span className="h-[3px] w-full rounded-full bg-black/15" />
+      <span className="h-[3px] w-full rounded-full bg-black/15" />
+      <span className="h-[3px] w-2/3 rounded-full bg-black/15" />
+    </div>
   );
 }
 
