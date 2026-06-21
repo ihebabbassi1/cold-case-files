@@ -58,6 +58,7 @@ export function InvestigationBoard({
   const [linkFrom, setLinkFrom] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
+  const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
 
   // Load saved board once on mount.
   useEffect(() => {
@@ -80,6 +81,24 @@ export function InvestigationBoard({
     };
   }, [open]);
 
+  // Esc cancels the in-progress thread, then connect mode, then closes.
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      if (linkFrom) {
+        setLinkFrom(null);
+        setCursor(null);
+      } else if (linkMode) {
+        setLinkMode(false);
+      } else {
+        setOpen(false);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, linkMode, linkFrom]);
+
   /** Commit + persist immediately (discrete actions). */
   function commit(next: BoardState) {
     boardRef.current = next;
@@ -95,6 +114,15 @@ export function InvestigationBoard({
 
   const placedIds = new Set(board.placed.map((p) => p.cardId));
   const trayCards = cards.filter((c) => !placedIds.has(c.id));
+
+  /** Position of any linkable node — a pinned card OR a sticky note. */
+  function nodePos(id: string): { x: number; y: number } | null {
+    const p = board.placed.find((p) => p.cardId === id);
+    if (p) return { x: p.x, y: p.y };
+    const n = board.notes.find((n) => n.id === id);
+    if (n) return { x: n.x, y: n.y };
+    return null;
+  }
 
   function pinCard(cardId: string) {
     const n = board.placed.length;
@@ -116,38 +144,38 @@ export function InvestigationBoard({
     e: React.PointerEvent,
     cardId: string
   ) {
-    if (linkMode) {
-      e.preventDefault();
-      handleLink(cardId);
-      return;
-    }
+    // In connect mode the overlay handles linking; never start a drag.
+    if (linkMode) return;
     startDrag(e, (b, x, y) => ({
       ...b,
       placed: b.placed.map((p) => (p.cardId === cardId ? { ...p, x, y } : p)),
     }));
   }
 
-  function handleLink(cardId: string) {
+  /** Link any two nodes (cards or notes). */
+  function handleLink(nodeId: string) {
     if (linkFrom === null) {
-      setLinkFrom(cardId);
+      setLinkFrom(nodeId);
       return;
     }
-    if (linkFrom === cardId) {
+    if (linkFrom === nodeId) {
       setLinkFrom(null);
+      setCursor(null);
       return;
     }
     const exists = board.links.some(
       (l) =>
-        (l.a === linkFrom && l.b === cardId) ||
-        (l.a === cardId && l.b === linkFrom)
+        (l.a === linkFrom && l.b === nodeId) ||
+        (l.a === nodeId && l.b === linkFrom)
     );
     if (!exists) {
       commit({
         ...board,
-        links: [...board.links, { id: uid("link"), a: linkFrom, b: cardId }],
+        links: [...board.links, { id: uid("link"), a: linkFrom, b: nodeId }],
       });
     }
     setLinkFrom(null);
+    setCursor(null);
   }
 
   function setVerdict(cardId: string, v: Verdict) {
@@ -219,11 +247,23 @@ export function InvestigationBoard({
   }
 
   function onStageMove(e: React.MouseEvent) {
-    if (dragging) return;
+    if (dragging || linkMode) return;
     const r = e.currentTarget.getBoundingClientRect();
     const px = (e.clientX - r.left) / r.width - 0.5;
     const py = (e.clientY - r.top) / r.height - 0.5;
     setTilt({ rx: -py * 5, ry: px * 6 });
+  }
+
+  /** Track the cursor in board coords so the thread rubber-bands to it. */
+  function onPlaneMove(e: React.MouseEvent) {
+    if (!linkMode || linkFrom === null) return;
+    const plane = planeRef.current;
+    if (!plane) return;
+    const r = plane.getBoundingClientRect();
+    setCursor({
+      x: ((e.clientX - r.left) / r.width) * 100,
+      y: ((e.clientY - r.top) / r.height) * 100,
+    });
   }
 
   const count =
@@ -266,7 +306,7 @@ export function InvestigationBoard({
                   setLinkFrom(null);
                 }}
                 className="font-type text-[0.65rem] uppercase tracking-widest"
-                title="Connect two pinned leads with red string"
+                title="Connect any two leads or notes with red string"
               >
                 <Spline className="mr-1.5 h-3.5 w-3.5" />
                 {linkMode ? "Connecting…" : "Connect"}
@@ -303,19 +343,26 @@ export function InvestigationBoard({
           <div className="flex min-h-0 flex-1">
             {/* The board */}
             <div
-              className="relative flex-1 overflow-hidden"
+              className={`relative flex-1 overflow-hidden ${linkMode ? "cursor-crosshair" : ""}`}
               style={{ perspective: "1600px" }}
               onMouseMove={onStageMove}
               onMouseLeave={() => setTilt({ rx: 0, ry: 0 })}
-              onClick={() => linkFrom && setLinkFrom(null)}
+              onClick={() => {
+                if (linkFrom) {
+                  setLinkFrom(null);
+                  setCursor(null);
+                }
+              }}
             >
               <div
                 ref={planeRef}
                 className="board-cork absolute inset-4 rounded-md border-[10px] border-[#5b3a1e] shadow-[inset_0_0_120px_rgba(0,0,0,0.55)]"
+                onMouseMove={onPlaneMove}
                 style={{
-                  transform: dragging
-                    ? "none"
-                    : `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
+                  transform:
+                    dragging || linkMode
+                      ? "none"
+                      : `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
                   transformStyle: "preserve-3d",
                   transition: dragging ? "none" : "transform 0.2s ease-out",
                 }}
@@ -325,9 +372,26 @@ export function InvestigationBoard({
                   className="pointer-events-none absolute inset-0 h-full w-full"
                   style={{ overflow: "visible" }}
                 >
+                  {/* rubber-band thread following the cursor while connecting */}
+                  {linkMode && linkFrom && cursor && (() => {
+                    const from = nodePos(linkFrom);
+                    if (!from) return null;
+                    return (
+                      <line
+                        x1={`${from.x}%`}
+                        y1={`${from.y}%`}
+                        x2={`${cursor.x}%`}
+                        y2={`${cursor.y}%`}
+                        stroke="hsl(0 70% 50% / 0.7)"
+                        strokeWidth={2}
+                        strokeDasharray="6 6"
+                        strokeLinecap="round"
+                      />
+                    );
+                  })()}
                   {board.links.map((l) => {
-                    const a = board.placed.find((p) => p.cardId === l.a);
-                    const b = board.placed.find((p) => p.cardId === l.b);
+                    const a = nodePos(l.a);
+                    const b = nodePos(l.b);
                     if (!a || !b) return null;
                     return (
                       <g key={l.id} className="pointer-events-auto">
@@ -384,6 +448,19 @@ export function InvestigationBoard({
                     >
                       {/* pin */}
                       <span className="absolute -top-2 left-1/2 z-10 h-3.5 w-3.5 -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_35%_30%,#ff6b6b,#9b1c1c)] shadow" />
+
+                      {/* connect-mode click target — whole card is one easy target */}
+                      {linkMode && (
+                        <button
+                          type="button"
+                          aria-label="Connect this lead"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLink(p.cardId);
+                          }}
+                          className="absolute inset-0 z-30 cursor-crosshair rounded-sm ring-inset transition-shadow hover:ring-2 hover:ring-primary/70"
+                        />
+                      )}
 
                       {/* remove */}
                       <button
@@ -459,10 +536,14 @@ export function InvestigationBoard({
                 })}
 
                 {/* sticky notes */}
-                {board.notes.map((n) => (
+                {board.notes.map((n) => {
+                  const isLinkSource = linkFrom === n.id;
+                  return (
                   <div
                     key={n.id}
-                    className="group absolute w-[140px] -translate-x-1/2 -translate-y-1/2 rounded-sm p-0 shadow-[0_12px_24px_-8px_rgba(0,0,0,0.8)]"
+                    className={`group absolute w-[140px] -translate-x-1/2 -translate-y-1/2 rounded-sm p-0 shadow-[0_12px_24px_-8px_rgba(0,0,0,0.8)] ${
+                      isLinkSource ? "ring-2 ring-primary" : ""
+                    }`}
                     style={{
                       left: `${n.x}%`,
                       top: `${n.y}%`,
@@ -471,14 +552,15 @@ export function InvestigationBoard({
                     }}
                   >
                     <div
-                      onPointerDown={(e) =>
+                      onPointerDown={(e) => {
+                        if (linkMode) return;
                         startDrag(e, (b, x, y) => ({
                           ...b,
                           notes: b.notes.map((m) =>
                             m.id === n.id ? { ...m, x, y } : m
                           ),
-                        }))
-                      }
+                        }));
+                      }}
                       className="flex h-5 cursor-grab items-center justify-between px-1.5 active:cursor-grabbing"
                     >
                       <span className="text-[0.5rem] font-bold uppercase tracking-widest text-black/40">
@@ -498,8 +580,22 @@ export function InvestigationBoard({
                       placeholder="Your hunch…"
                       className="h-20 w-full resize-none border-0 bg-transparent px-2 pb-2 font-serif text-[0.78rem] leading-snug text-black/80 placeholder:text-black/30 focus:outline-none"
                     />
+
+                    {/* connect-mode click target for notes */}
+                    {linkMode && (
+                      <button
+                        type="button"
+                        aria-label="Connect this note"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLink(n.id);
+                        }}
+                        className="absolute inset-0 z-30 cursor-crosshair rounded-sm ring-inset transition-shadow hover:ring-2 hover:ring-primary/70"
+                      />
+                    )}
                   </div>
-                ))}
+                  );
+                })}
 
                 {/* empty state */}
                 {board.placed.length === 0 && board.notes.length === 0 && (
@@ -515,8 +611,8 @@ export function InvestigationBoard({
                 <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center">
                   <span className="rounded-full bg-primary/90 px-4 py-1.5 font-type text-[0.65rem] uppercase tracking-widest text-primary-foreground shadow-lg">
                     {linkFrom
-                      ? "Click a second lead to link them"
-                      : "Click a lead to start a thread"}
+                      ? "Now click any other lead or note to tie the thread"
+                      : "Click any lead or note to start a thread · Esc to cancel"}
                   </span>
                 </div>
               )}
