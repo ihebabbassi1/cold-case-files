@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Suspect } from "@/types/case";
 import { submitAccusation, analyzeAccusation } from "@/lib/actions";
+import { readTheory } from "@/lib/board-store";
 import { Crosshair } from "@/components/crosshair";
 import { Stamp } from "@/components/stamp";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,23 @@ export function AccusationFlow({
   const [error, setError] = useState<string | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [aiRating, setAiRating] = useState<"strong" | "plausible" | "weak" | null>(null);
+  const [fromBoard, setFromBoard] = useState(false);
+
+  // Pull the detective's Investigation Board theory into the accusation: their
+  // PRIME-marked suspect is pre-selected and their notes pre-fill the reasoning.
+  useEffect(() => {
+    const theory = readTheory(caseId);
+    if (!theory.hasContent) return;
+    if (theory.primeSuspectId && suspects.some((s) => s.id === theory.primeSuspectId)) {
+      setSelectedId(theory.primeSuspectId);
+      setFromBoard(true);
+    }
+    if (theory.reasoning) {
+      setReasoning(theory.reasoning);
+      setFromBoard(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [caseId]);
 
   const selected = suspects.find((s) => s.id === selectedId) ?? null;
 
@@ -250,6 +268,13 @@ export function AccusationFlow({
           evaluate your reasoning.
         </p>
       </div>
+
+      {fromBoard && (
+        <div className="mx-auto mt-6 max-w-xl rounded border border-primary/40 bg-primary/5 px-4 py-3 text-center font-type text-[0.7rem] uppercase tracking-widest text-primary">
+          Pulled from your Investigation Board — your prime suspect and notes are
+          pre-filled. Adjust anything before you file.
+        </div>
+      )}
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
         {suspects.map((s) => {

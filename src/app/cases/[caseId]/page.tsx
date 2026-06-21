@@ -14,6 +14,10 @@ import { Stamp } from "@/components/stamp";
 import { ChapterGate } from "@/components/chapter-gate";
 import { ClueCard, ExhibitProgress } from "@/components/clue-card";
 import {
+  InvestigationBoard,
+  type BoardCard,
+} from "@/components/investigation-board";
+import {
   ChapterCinematic,
   type CinematicPayload,
 } from "@/components/chapter-cinematic";
@@ -177,6 +181,39 @@ export default async function CasePage({
   const cipherPhotos = allowedPhotos.filter((p) =>
     ["z408-cipher", "z340-cipher"].includes(p.id)
   );
+
+  // Cards the detective can pin on the Investigation Board — only what the
+  // chapter game has already unlocked.
+  const boardCards: BoardCard[] = [
+    ...visibleSuspects.map((s) => ({
+      id: `suspect:${s.id}`,
+      kind: "suspect" as const,
+      title: s.name,
+      subtitle: s.alias,
+    })),
+    ...allowedPhotos.map((p) => ({
+      id: `photo:${p.id}`,
+      kind: "photo" as const,
+      title: p.caption.length > 38 ? p.caption.slice(0, 36) + "…" : p.caption,
+      image: p.url,
+    })),
+    ...visibleVictims.map((v) => ({
+      id: `victim:${v.name}`,
+      kind: "victim" as const,
+      title: v.name,
+    })),
+    ...visibleEvidence.map((e) => ({
+      id: `evidence:${e.id}`,
+      kind: "evidence" as const,
+      title: e.title,
+      subtitle: e.tag,
+    })),
+    ...visibleCiphers.map((c) => ({
+      id: `cipher:${c.id}`,
+      kind: "cipher" as const,
+      title: c.name,
+    })),
+  ];
   const suspectPhotos = allowedPhotos.filter((p) =>
     ["wanted-poster", "berryessa-sketch"].includes(p.id)
   );
@@ -706,6 +743,10 @@ export default async function CasePage({
           completed={investigationComplete}
           currentChapter={reveal.currentChapter}
         />
+      )}
+
+      {boardCards.length > 0 && (
+        <InvestigationBoard caseId={file.id} cards={boardCards} />
       )}
 
       <ChapterCinematic
