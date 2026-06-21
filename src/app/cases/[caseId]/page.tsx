@@ -187,7 +187,7 @@ export default async function CasePage({
   // real case image; cards with no genuine match fall back to a themed
   // placeholder (no invented faces).
   const VICTIM_IMG: Record<string, string> = {
-    "David Faraday & Betty Lou Jensen": "/zodiac/lake-herman-road.jpg",
+    "David Faraday & Betty Lou Jensen": "/zodiac/lake-herman-road.png",
     "Darlene Ferrin": "/zodiac/darlene-ferrin.png",
     "Michael Mageau": "/zodiac/michael-mageau.png",
     "Cecelia Shepard": "/zodiac/lake-berryessa.jpg",

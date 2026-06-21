@@ -539,7 +539,7 @@ const zodiac: CaseFile = {
     },
     {
       id: "lake-herman-road",
-      url: "/zodiac/lake-herman-road.jpg",
+      url: "/zodiac/lake-herman-road.png",
       caption: "Lake Herman Road, Benicia — the site of the Zodiac's first confirmed double murder on December 20, 1968. David Faraday and Betty Lou Jensen, both teenagers on their first date, were shot dead at a gravel turnout on this rural stretch of road.",
       credit: "Wikimedia Commons / public domain",
       year: "1968",

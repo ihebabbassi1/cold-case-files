@@ -28,7 +28,7 @@ const CASE_EVIDENCE: Record<string, EvidenceCard[]> = {
   zodiac: [
     { src: "/zodiac/wanted-poster.png", x: -260, y: -78, z: 40, rot: -8, delay: 0.9, label: "Wanted" },
     { src: "/zodiac/z408-cipher.png", x: 255, y: -92, z: 95, rot: 6, delay: 1.1, label: "Cipher Z408" },
-    { src: "/zodiac/lake-herman-road.jpg", x: -250, y: 116, z: 0, rot: 5, delay: 1.3, label: "Lake Herman Rd" },
+    { src: "/zodiac/lake-herman-road.png", x: -250, y: 116, z: 0, rot: 5, delay: 1.3, label: "Lake Herman Rd" },
     { src: "/zodiac/zodiac-letter-jul1969.jpg", x: 248, y: 108, z: 60, rot: -6, delay: 1.5, label: "Jul 1969 Letter" },
   ],
 };
