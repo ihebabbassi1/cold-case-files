@@ -10,7 +10,6 @@ import {
   Network,
   Trash2,
   Scissors,
-  ChevronDown,
 } from "lucide-react";
 import {
   loadBoard,
@@ -26,7 +25,6 @@ export interface BoardCard {
   kind: "photo" | "suspect" | "evidence" | "victim" | "cipher";
   title: string;
   subtitle?: string;
-  description?: string;
   image?: string;
 }
 
@@ -62,7 +60,6 @@ export function InvestigationBoard({
   const [dragging, setDragging] = useState(false);
   const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
-  const [openTrayId, setOpenTrayId] = useState<string | null>(null);
 
   // Load saved board once on mount.
   useEffect(() => {
@@ -480,11 +477,11 @@ export function InvestigationBoard({
                       <p className="mt-1.5 truncate font-type text-[0.55rem] uppercase tracking-wider text-[#6b5836]">
                         {KIND_LABEL[card.kind]}
                       </p>
-                      <p className="truncate font-headline text-xs font-bold text-[#2e2718]">
+                      <p className="font-headline text-xs font-bold leading-tight text-[#2e2718] [overflow-wrap:anywhere]">
                         {card.title}
                       </p>
                       {card.subtitle && (
-                        <p className="truncate font-serif text-[0.65rem] italic text-[#6b5836]">
+                        <p className="mt-0.5 font-serif text-[0.65rem] italic leading-tight text-[#6b5836]">
                           {card.subtitle}
                         </p>
                       )}
@@ -628,7 +625,7 @@ export function InvestigationBoard({
             </div>
 
             {/* Evidence tray */}
-            <aside className="flex w-64 shrink-0 flex-col border-l border-black/50 bg-[#15100b]">
+            <aside className="flex w-56 shrink-0 flex-col border-l border-black/50 bg-[#15100b]">
               <p className="border-b border-black/40 px-4 py-3 font-type text-[0.65rem] uppercase tracking-[0.3em] text-[hsl(40,28%,70%)]">
                 Evidence tray
               </p>
@@ -638,69 +635,24 @@ export function InvestigationBoard({
                     Everything you&apos;ve uncovered is on the board.
                   </p>
                 ) : (
-                  trayCards.map((c) => {
-                    const isOpen = openTrayId === c.id;
-                    return (
-                      <div
-                        key={c.id}
-                        className={`overflow-hidden rounded border transition-colors ${
-                          isOpen
-                            ? "border-primary/60 bg-black/55"
-                            : "border-white/10 bg-black/30 hover:border-primary/50"
-                        }`}
-                      >
-                        <button
-                          onClick={() => setOpenTrayId(isOpen ? null : c.id)}
-                          className="flex w-full items-center gap-2 p-2 text-left"
-                        >
-                          <CardThumb card={c} className="h-11 w-11 shrink-0 rounded" />
-                          <span className="min-w-0 flex-1">
-                            <span className="block font-type text-[0.58rem] uppercase tracking-wider text-primary/80">
-                              {KIND_LABEL[c.kind]}
-                            </span>
-                            <span
-                              className={`block font-serif text-xs text-[hsl(40,30%,84%)] ${
-                                isOpen ? "" : "truncate"
-                              }`}
-                            >
-                              {c.title}
-                            </span>
-                          </span>
-                          <ChevronDown
-                            className={`ml-auto h-3.5 w-3.5 shrink-0 text-white/40 transition-transform ${
-                              isOpen ? "rotate-180" : ""
-                            }`}
-                          />
-                        </button>
-
-                        {isOpen && (
-                          <div className="border-t border-white/10 px-3 pb-3 pt-2">
-                            {c.subtitle && (
-                              <p className="font-type text-[0.58rem] uppercase tracking-widest text-primary/70">
-                                {c.subtitle}
-                              </p>
-                            )}
-                            {c.description && (
-                              <p className="mt-1 font-serif text-[0.74rem] leading-snug text-[hsl(40,26%,72%)]">
-                                {c.description}
-                              </p>
-                            )}
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                pinCard(c.id);
-                                setOpenTrayId(null);
-                              }}
-                              className="mt-2.5 w-full font-type text-[0.6rem] uppercase tracking-widest"
-                            >
-                              <Plus className="mr-1 h-3 w-3" />
-                              Pin to board
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
+                  trayCards.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => pinCard(c.id)}
+                      className="flex w-full items-center gap-2 rounded border border-white/10 bg-black/30 p-2 text-left transition-colors hover:border-primary/60 hover:bg-black/50"
+                    >
+                      <CardThumb card={c} className="h-10 w-10 shrink-0 rounded" />
+                      <span className="min-w-0">
+                        <span className="block truncate font-type text-[0.6rem] uppercase tracking-wider text-primary/80">
+                          {KIND_LABEL[c.kind]}
+                        </span>
+                        <span className="block truncate font-serif text-xs text-[hsl(40,30%,82%)]">
+                          {c.title}
+                        </span>
+                      </span>
+                      <Plus className="ml-auto h-3.5 w-3.5 shrink-0 text-white/40" />
+                    </button>
+                  ))
                 )}
               </div>
               <p className="border-t border-black/40 px-4 py-2 font-serif text-[0.6rem] italic leading-snug text-[hsl(40,20%,50%)]">
