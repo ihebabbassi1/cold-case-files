@@ -674,13 +674,16 @@ function CardThumb({
   card: BoardCard;
   className?: string;
 }) {
-  if (card.image) {
+  const [failed, setFailed] = useState(false);
+
+  if (card.image && !failed) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={card.image}
         alt={card.title}
         draggable={false}
+        onError={() => setFailed(true)}
         className={`${className} object-cover grayscale-[0.25] sepia-[0.1]`}
       />
     );

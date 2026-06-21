@@ -188,6 +188,8 @@ export default async function CasePage({
   // placeholder (no invented faces).
   const VICTIM_IMG: Record<string, string> = {
     "David Faraday & Betty Lou Jensen": "/zodiac/lake-herman-road.jpg",
+    "Darlene Ferrin": "/zodiac/darlene-ferrin.jpg",
+    "Michael Mageau": "/zodiac/michael-mageau.jpg",
     "Cecelia Shepard": "/zodiac/lake-berryessa.jpg",
     "Bryan Hartnell": "/zodiac/hartnell-car-door.jpg",
     "Paul Lee Stine": "/zodiac/stine-crime-scene.jpg",
