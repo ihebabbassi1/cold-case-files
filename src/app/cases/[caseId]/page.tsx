@@ -183,7 +183,27 @@ export default async function CasePage({
   );
 
   // Cards the detective can pin on the Investigation Board — only what the
-  // chapter game has already unlocked.
+  // chapter game has already unlocked. Each card maps to the closest VERIFIED
+  // real case image; cards with no genuine match fall back to a themed
+  // placeholder (no invented faces).
+  const VICTIM_IMG: Record<string, string> = {
+    "David Faraday & Betty Lou Jensen": "/zodiac/lake-herman-road.jpg",
+    "Cecelia Shepard": "/zodiac/lake-berryessa.jpg",
+    "Bryan Hartnell": "/zodiac/hartnell-car-door.jpg",
+    "Paul Lee Stine": "/zodiac/stine-crime-scene.jpg",
+  };
+  const EVIDENCE_IMG: Record<string, string> = {
+    symbol: "/zodiac/wanted-poster.png", // bulletin showing the crossed-circle sign
+    letters: "/zodiac/zodiac-letter-jul1969.jpg",
+    shirt: "/zodiac/stine-crime-scene.jpg", // swatch torn from Stine's shirt
+    costume: "/zodiac/lake-berryessa.jpg", // the Berryessa hooded attack
+    sketch: "/zodiac/berryessa-sketch.jpg",
+  };
+  const CIPHER_IMG: Record<string, string> = {
+    z408: "/zodiac/z408-cipher.png",
+    z340: "/zodiac/z340-cipher.jpg",
+  };
+
   const boardCards: BoardCard[] = [
     ...visibleSuspects.map((s) => ({
       id: `suspect:${s.id}`,
@@ -201,24 +221,20 @@ export default async function CasePage({
       id: `victim:${v.name}`,
       kind: "victim" as const,
       title: v.name,
+      image: VICTIM_IMG[v.name],
     })),
     ...visibleEvidence.map((e) => ({
       id: `evidence:${e.id}`,
       kind: "evidence" as const,
       title: e.title,
       subtitle: e.tag,
+      image: EVIDENCE_IMG[e.id],
     })),
     ...visibleCiphers.map((c) => ({
       id: `cipher:${c.id}`,
       kind: "cipher" as const,
       title: c.name,
-      // Real scans exist for the two famous ciphers; others use a glyph card.
-      image:
-        c.id === "z408"
-          ? "/zodiac/z408-cipher.png"
-          : c.id === "z340"
-            ? "/zodiac/z340-cipher.jpg"
-            : undefined,
+      image: CIPHER_IMG[c.id],
     })),
   ];
   const suspectPhotos = allowedPhotos.filter((p) =>
