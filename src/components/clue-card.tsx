@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";
+import { playSfx } from "@/lib/sound";
 
 const EXAMINED_EVENT = "ccf:examined";
 
@@ -47,6 +48,7 @@ export function ClueCard({
     }
     setRevealing(true);
     setExamined(true);
+    playSfx("examine", 0.5);
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent(EXAMINED_EVENT));
     }

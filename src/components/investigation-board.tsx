@@ -18,6 +18,7 @@ import {
   type BoardState,
   type Verdict,
 } from "@/lib/board-store";
+import { playSfx } from "@/lib/sound";
 import { Button } from "@/components/ui/button";
 
 export interface BoardCard {
@@ -130,6 +131,7 @@ export function InvestigationBoard({
     const x = clamp(50 + ((n % 5) - 2) * 9 + rand(3), 6, 94);
     const y = clamp(34 + Math.floor(n / 5) * 15 + rand(3), 12, 88);
     commit({ ...board, placed: [...board.placed, { cardId, x, y }] });
+    playSfx("pin", 0.5);
   }
 
   function unpinCard(cardId: string) {
@@ -181,6 +183,7 @@ export function InvestigationBoard({
 
   function removeLink(id: string) {
     commit({ ...board, links: board.links.filter((l) => l.id !== id) });
+    playSfx("cut", 0.5);
   }
 
   function setVerdict(cardId: string, v: Verdict) {

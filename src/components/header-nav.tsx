@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
+import { SoundToggle } from "@/components/sound-toggle";
 
 type User = { id: string; name: string; email: string } | null;
 
@@ -18,6 +19,8 @@ export function HeaderNav({ user }: { user: User }) {
 
   return (
     <nav className="flex items-center gap-2">
+      <SoundToggle />
+
       <Button asChild variant="ghost" size="sm" className="font-type text-xs uppercase tracking-wider">
         <Link href="/cases">Case Files</Link>
       </Button>

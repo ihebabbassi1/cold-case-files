@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { playSfx } from "@/lib/sound";
 import type { BadgeIcon } from "@/data/badges";
 import { Crosshair } from "@/components/crosshair";
 import { BadgeGlyph } from "@/components/badge-icon";
@@ -126,6 +127,7 @@ export function ChapterCinematic({
     }
 
     setShow(true);
+    playSfx("unlock", 0.5);
     const t = setTimeout(() => dismiss(), AUTO_DISMISS_MS);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps

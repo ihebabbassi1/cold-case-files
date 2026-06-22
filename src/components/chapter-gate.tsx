@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { submitPuzzleAnswer } from "@/lib/actions";
+import { playSfx } from "@/lib/sound";
 import type { ClientChapter } from "@/data/chapters";
 import { Crosshair } from "@/components/crosshair";
 import { Stamp } from "@/components/stamp";
@@ -103,9 +104,11 @@ export function ChapterGate({
       setAttempts((n) => n + 1);
       setWrong(true);
       setPhase("idle");
+      playSfx("wrong", 0.5);
       return;
     }
 
+    playSfx("correct", 0.55);
     setReveal(result.explanation ?? null);
     setJustCompleted(Boolean(result.completed));
     setTimeout(() => setPhase("solved"), 1800);
